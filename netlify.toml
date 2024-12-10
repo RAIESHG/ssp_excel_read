@@ -1,18 +1,9 @@
 [build]
-  command = """
-    pip install -r requirements.txt
-    streamlit run streamlit_app.py
-  """
-  publish = "."
-
-[build.environment]
-  PYTHON_VERSION = "3.9"
+  command = "npm run build"
+  publish = "build"
 
 [[redirects]]
   from = "/*"
-  to = "/.netlify/functions/streamlit"
+  to = "/index.html"
   status = 200
-
-[functions]
-  directory = "functions"
-  node_bundler = "esbuild" 
+ 
