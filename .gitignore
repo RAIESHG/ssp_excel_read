@@ -1,0 +1,11 @@
+*.xlsx
+*.xls
+temp_excel_file*
+__pycache__/
+.env
+.venv
+venv/
+ENV/
+# Shell scripts and config files
+*.sh
+config.* 
