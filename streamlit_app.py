@@ -16,7 +16,7 @@ def get_excel_sheets(file_path):
     """Read all sheets from Excel file and return sheet names"""
     try:
         # Use appropriate engine based on file type
-        if file_path.name.endswith('.xls'):
+        if file_path.endswith('.xls'):
             excel_file = pd.ExcelFile(file_path, engine='xlrd')
         else:
             excel_file = pd.ExcelFile(file_path, engine='openpyxl')
@@ -87,15 +87,10 @@ def search_table(df, search_term):
     # Return rows where any column contains the search term
     return df[mask]
 
-def extract_images(uploaded_file, sheet_name):
+def extract_images(file_path, sheet_name):
     """Extract images from the specified sheet"""
-    # Save uploaded file temporarily
-    temp_path = "temp_excel_file.xlsx"
-    with open(temp_path, "wb") as f:
-        f.write(uploaded_file.getvalue())
-    
     try:
-        workbook = openpyxl.load_workbook(temp_path)
+        workbook = openpyxl.load_workbook(file_path)
         sheet = workbook[sheet_name]
         images = []
         
@@ -146,21 +141,16 @@ def extract_images(uploaded_file, sheet_name):
     except Exception as e:
         st.warning(f"Could not extract images: {str(e)}")
         return []
-    finally:
-        # Clean up temporary file
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
 
 def main():
     st.title("Excel Table Viewer")
     
-    # File uploader for xlsx only
-    st.write("Supported file type: .xlsx only")
-    uploaded_file = st.file_uploader("Choose an Excel file", type=['xlsx'])
+    # Define the path to the Excel file in your directory
+    file_path = "ref.xlsx"  # Specify the path to your Excel file here
     
-    if uploaded_file is not None:
+    if os.path.exists(file_path):
         # Get sheet names
-        sheet_names = get_excel_sheets(uploaded_file)
+        sheet_names = get_excel_sheets(file_path)
         
         if sheet_names:
             # Sheet selection
@@ -168,7 +158,7 @@ def main():
             
             # Extract and display images with error handling
             try:
-                images = extract_images(uploaded_file, selected_sheet)
+                images = extract_images(file_path, selected_sheet)
                 if images:
                     st.subheader("Images in Sheet")
                     cols = st.columns(min(len(images), 3))  # Create up to 3 columns
@@ -182,7 +172,7 @@ def main():
                 st.error(f"Error processing images: {str(e)}")
             
             # Read the selected sheet
-            df = pd.read_excel(uploaded_file, sheet_name=selected_sheet)
+            df = pd.read_excel(file_path, sheet_name=selected_sheet)
             
             # Identify tables and use the first one
             tables = identify_tables(df)
@@ -221,8 +211,10 @@ def main():
                     st.write(f"Showing all {len(table_df)} rows")
             else:
                 st.warning("No tables found in the selected sheet")
+        else:
+            st.warning("No sheets found in the Excel file.")
     else:
-        st.info("Please upload an Excel file to begin")
+        st.warning(f"Excel file not found at {file_path}")
 
 if __name__ == "__main__":
-    main() 
+    main()
