@@ -139,10 +139,30 @@ def extract_images(file_path, sheet_name):
 def main():
     st.title("Excel Search Tool")
     
+    # Add common searches list
+    common_searches = [
+        "W44", "M14", "S24", "HP14", "C15", "MC18", "L9", "WT10", "ST12"
+    ]
+    
+    st.subheader("Common Searches:")
+    # Create columns for common search buttons
+    cols = st.columns(4)  # 4 buttons per row
+    for idx, term in enumerate(common_searches):
+        col_idx = idx % 4
+        with cols[col_idx]:
+            if st.button(term):
+                st.session_state.search_term = term
+    
     file_path = "ref.xlsx"
     
     if os.path.exists(file_path):
-        search_term = st.text_input("Search across all tables:", "")
+        # Initialize session state for search term if not exists
+        if 'search_term' not in st.session_state:
+            st.session_state.search_term = ""
+            
+        # Use text input with session state
+        search_term = st.text_input("Search across all tables:", 
+                                  value=st.session_state.search_term)
         
         if search_term:
             results, match_positions = search_all_sheets(file_path, search_term)
