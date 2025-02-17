@@ -32,14 +32,12 @@ def find_nearest_table_above(df, match_row_idx, match_col_idx):
 def get_table_data(df, header_row, match_row):
     """Get the entire table data starting from header row"""
     try:
-        # Get headers from the row below 'table'
         headers = df.iloc[header_row].tolist()
-        
-        # Get all data rows after headers
         table_data = df.iloc[header_row + 1:]
-        
-        # Convert to DataFrame with proper headers
         table_df = pd.DataFrame(table_data.values, columns=headers)
+        
+        # Convert all values to strings and replace NaN early
+        table_df = table_df.fillna('').astype(str)
         
         return table_df
     except Exception as e:
@@ -56,8 +54,9 @@ def search_all_sheets(file_path, search_term):
         
         for sheet_name in excel_file.sheet_names:
             try:
-                # Read the entire sheet
+                # Read sheet with NaN replacement and string conversion
                 df_full = pd.read_excel(file_path, sheet_name=sheet_name, header=None)
+                df_full = df_full.fillna('').astype(str)
                 
                 # Search for term
                 df_str = df_full.astype(str)
@@ -169,7 +168,13 @@ def main():
             
             if results is not None and not results.empty:
                 st.write(f"Found matches in {len(match_positions)} locations")
-                
+
+                # **Handle NaN values: Fill with empty string instead of None**
+                results_cleaned = results.fillna(value='')
+
+                # Convert all data to strings after NaN handling
+                results_cleaned = results_cleaned.astype(str)
+
                 # Display images first
                 unique_sheets = set(m['sheet'] for m in match_positions)
                 for sheet_name in unique_sheets:
@@ -185,19 +190,25 @@ def main():
                 # Then display the search results table
                 st.subheader("Search Results:")
                 # Remove Sheet Name column before styling
-                display_results = results.drop(columns=['Sheet Name'])
+                display_results = results_cleaned.drop(columns=['Sheet Name'])
                 
-                # Create style function for highlighting all matches
+                # Display table with highlighting
+                # Reset index and ensure unique column names
+                display_results = display_results.reset_index(drop=True)
+                display_results.columns = [f"col_{i}" if col in display_results.columns[:i] else col 
+                                         for i, col in enumerate(display_results.columns)]
+
+                # Create new highlight function with position-based indexing
                 def highlight_matches(x):
                     df_styler = pd.DataFrame('', index=x.index, columns=x.columns)
                     for match in match_positions:
-                        # Adjust column index since we removed Sheet Name column
-                        col_idx = match['col_idx'] - 1  # Subtract 1 because we removed Sheet Name
-                        row_idx = match['row_idx']
-                        df_styler.iloc[row_idx, col_idx] = 'background-color: yellow'
+                        try:
+                            # Use position-based indexing with .iloc
+                            df_styler.iloc[match['row_idx'], match['col_idx'] - 1] = 'background-color: yellow'
+                        except IndexError:
+                            continue
                     return df_styler
-                
-                # Display table with highlighting
+
                 styled_table = display_results.style.apply(highlight_matches, axis=None)
                 st.dataframe(styled_table)
                 
